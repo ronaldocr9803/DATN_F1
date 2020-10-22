@@ -63,8 +63,8 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
         'state_dict': model.state_dict(),
         'optimizer': optimizer.state_dict(),
     }
-    utils.save_ckp(checkpoint, False, checkpoint_path, best_model_path)
-    return checkpoint
+    # utils.save_ckp(checkpoint, False, checkpoint_path, best_model_path)
+    # return checkpoint
     
 def _get_iou_types(model):
     model_without_ddp = model
@@ -84,6 +84,17 @@ def evaluate(model, data_loader, device):
     # FIXME remove this and make paste_masks_in_image run on the GPU
     torch.set_num_threads(1)
     cpu_device = torch.device("cpu")
+
+    # #compute loss val
+    # model.train()
+
+    # loss_dict = model(images, targets)
+
+    # losses = sum(loss for loss in loss_dict.values())
+    # #option
+    # total_loss = total_loss + losses
+    total_loss = 0.0
+
     model.eval()
     metric_logger = utils.MetricLogger(delimiter="  ")
     header = 'Test:'
@@ -96,10 +107,19 @@ def evaluate(model, data_loader, device):
         image = list(img.to(device) for img in image)
         targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
 
-        torch.cuda.synchronize()
-        model_time = time.time()
-        outputs = model(image)
+        #compute loss val
+        model.train()
 
+        loss_dict = model(images, targets)
+
+        losses = sum(loss for loss in loss_dict.values())
+        #option
+        total_loss = total_loss + losses
+
+        torch.cuda.synchronize()
+        model_time = time.time() #return boxes, labels, scores
+        outputs = model(image)
+        import ipdb; ipdb.set_trace()
         outputs = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs]
         model_time = time.time() - model_time
 
