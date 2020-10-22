@@ -4,12 +4,13 @@ import time
 import torch
 
 import torchvision.models.detection.mask_rcnn
+from torch.utils.tensorboard import SummaryWriter
 
 from coco_utils import get_coco_api_from_dataset
 from coco_eval import CocoEvaluator
 import utils
 
-
+tb = SummaryWriter()
 def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
     # import ipdb; ipdb.set_trace()
     model.train()
@@ -23,6 +24,7 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
         warmup_iters = min(1000, len(data_loader) - 1)
 
         lr_scheduler = utils.warmup_lr_scheduler(optimizer, warmup_iters, warmup_factor)
+    total_loss = 0.0
 
     for images, targets in metric_logger.log_every(data_loader, print_freq, header):
         images = list(image.to(device) for image in images)
@@ -31,7 +33,8 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
         loss_dict = model(images, targets)
 
         losses = sum(loss for loss in loss_dict.values())
-
+        #option
+        total_loss = total_loss + losses
         # reduce losses over all GPUs for logging purposes
         loss_dict_reduced = utils.reduce_dict(loss_dict)
         losses_reduced = sum(loss for loss in loss_dict_reduced.values())
@@ -52,8 +55,14 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
 
         metric_logger.update(loss=losses_reduced, **loss_dict_reduced)
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
-
-
+    tb.add_scalar('Train Loss', total_loss, epoch)
+    checkpoint = {
+        'epoch': epoch + 1,
+        'valid_loss_min': losses,
+        'state_dict': model.state_dict(),
+        'optimizer': optimizer.state_dict(),
+    }
+    
 def _get_iou_types(model):
     model_without_ddp = model
     if isinstance(model, torch.nn.parallel.DistributedDataParallel):
