@@ -78,7 +78,7 @@ if __name__ == "__main__":
     #start training
     for epoch in range(num_epochs):
         # train for one epoch, printing every 10 iterations
-        train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=10)
+        checkpoint = train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=10)
         # tb.add_scalar('Loss', total_loss, epoch)
         # update the learning rate
         lr_scheduler.step()

@@ -324,6 +324,7 @@ def save_checkpoint(epoch, model, optimizer):
     filename = 'checkpoint_ssd300.pth.tar'
     torch.save(state, filename)
 
+
 def save_ckp(state, is_best, checkpoint_path, best_model_path):
     """
     state: checkpoint we want to save

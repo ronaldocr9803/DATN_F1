@@ -17,6 +17,7 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
     metric_logger = utils.MetricLogger(delimiter="  ")
     metric_logger.add_meter('lr', utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
     header = 'Epoch: [{}]'.format(epoch)
+    checkpoint_path = './chkpoint_'
 
     lr_scheduler = None
     if epoch == 0:
@@ -58,10 +59,12 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
     tb.add_scalar('Train Loss', total_loss, epoch)
     checkpoint = {
         'epoch': epoch + 1,
-        'valid_loss_min': losses,
+        'train_loss_min': losses,
         'state_dict': model.state_dict(),
         'optimizer': optimizer.state_dict(),
     }
+    utils.save_ckp(checkpoint, False, checkpoint_path, best_model_path)
+    return checkpoint
     
 def _get_iou_types(model):
     model_without_ddp = model
